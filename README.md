@@ -35,11 +35,6 @@ Requires iOS 8.0 or later, excluding iOS 8.3/8.4 due to BTLE data transmission 
 https://itunes.apple.com/us/app/emotiv-insight/id1031805596
 
 
-## Contributing
-
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
-
-
 ## Authors
 
 Melisa Lenero https://github.com/melisale17
