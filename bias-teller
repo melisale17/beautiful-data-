@@ -1,0 +1,165 @@
+from websocket import create_connection
+import websocket
+import ssl
+import json
+import time
+import os
+LOGIN_REQUEST_USERNAME = os.environ['LOGIN_REQUEST_USERNAME']
+LOGIN_REQUEST_PASSWORD = os.environ['LOGIN_REQUEST_PASSWORD']
+LOGIN_REQUEST_CLIENT_ID = os.environ['LOGIN_REQUEST_CLIENT_ID']
+LOGIN_REQUEST_CLIENT_SECRET = os.environ['LOGIN_REQUEST_CLIENT_SECRET']
+LOGIN_REQUEST_LICENCE = os.environ['LOGIN_REQUEST_LICENCE']
+
+print(LOGIN_REQUEST_USERNAME)
+baseline_dur = 3
+
+def send_request(json_str, websocket_conn):
+    print('sending {}'.format(json.loads(json_str)['method']))
+    res = websocket_conn.send(json_str)
+    return json.loads(websocket_conn.recv())
+
+def grab_data(websocket_conn,indices,bands):
+    out_data = []
+    json_result = json.loads(websocket_conn.recv())
+    data = json_result['pow']
+    for idx, x in enumerate(data):
+        if x in indices:
+            out_data.append('{}={}'.format(bands[idx],x))
+    return out_data
+
+def grab_data_good(websocket_conn,indices, bands):
+    out_data = {}
+    json_result = json.loads(websocket_conn.recv())
+    data = json_result['pow']
+    for idx, x in enumerate(data):
+        if x in indices:
+            out_data[bands[idx]] = x
+    return out_data
+
+ws = websocket.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
+ws.connect("wss://emotivcortex.com:54321")
+
+get_login_request =  '{"jsonrpc": "2.0","method": "getUserLogin","id": 1}'
+subscribe_request = '{"jsonrpc": "2.0","method": "subscribe","params": {"_auth": "AUTH_CODE","streams": ["pow"]},"id": 1}'
+
+pow_bands = ['IED_F3/alpha', 'IED_F3/betaL', 'IED_F3/betaH','IED_F4/betaH', 'IED_F4/betaL', 'IED_F4/alpha','IED_FC5/betaH', 'IED_FC5/betaL', 'IED_FC5/alpha','IED_FC6/betaH', 'IED_FC6/betaL', 'IED_FC6/alpha','IED_T7/betaH', 'IED_T7/betaL', 'IED_T7/alpha', 'IED_T7/gamma','IED_01/betaH', 'IED_01/betaL', 'IED_01/alpha', 'IED_01/theta']
+
+get_login_res = send_request(get_login_request,ws)
+
+print(get_login_res)
+#if 'cb-gid' in get_login_res['result']:
+#    print(send_request(logout_request,ws))
+
+print(send_request(login_request,ws))
+auth_res = send_request(auth_request,ws)
+auth_token = auth_res['result']['_auth']
+
+create_session_request = create_session_request.replace('AUTH_CODE',auth_token)
+
+print(create_session_request)
+print(send_request(create_session_request,ws))
+session_result = send_request(create_session_request, ws)
+if 'error' in session_result:
+    print("Error: {}".format(session_result['error']['message']))
+
+subscribe_request = subscribe_request.replace('AUTH_CODE',auth_token)
+subsc_res = send_request(subscribe_request,ws)
+if 'error' in subsc_res:
+    print("Error: {}".format(subsc_res['error']['message']))
+
+
+all_pow_bands = subsc_res['result'][0]['pow']['cols']
+pow_indices = []
+pow_names = []
+for i, el in enumerate(all_pow_bands):
+    if el in pow_bands:
+        pow_indices.append(i)
+        pow_names.append(el)
+
+print('Starting baseline recording in 1 seconds')
+time.sleep(0)
+
+start_time = time.time()
+
+baselining = True
+
+baseline_data = []
+baseline_means = {}
+
+HISTORY_SIZE = 20
+all_data = {}
+
+def process_data(data, baseline_means):
+    interesting_keys = ["IED_F3/alpha"]
+
+    for key in interesting_keys:
+        # print(key)
+        channels_above_threshold = []
+
+        if key in all_data:
+            values = all_data[key]
+            latest_value = values[-1]
+
+            baseline_mean = baseline_means[key] if key in baseline_means else 0
+            mean_subtracted = latest_value - baseline_mean
+            #TODO DO IT FOR A CERTAIN PERIOD OF TIME, AFTER RECALCULATE AGAIN.
+            print("{} - {} - {}".format(key, latest_value, mean_subtracted))
+
+            threshold = 1
+
+            if mean_subtracted > threshold:
+                channels_above_threshold.append(key)
+                #ArduinoWhispererSerial.turn_on()
+                print("THIS IS A BIAS! {}".format(key))
+            #else:
+                #ArduinoWhispererSerial.turn_off()
+        else:
+            print("{} not in data".format(key))
+
+        if len(channels_above_threshold) > 1:
+            print("lots of bias channels over threshold")
+
+
+while True:
+    now_time = time.time()
+    diff = now_time - start_time
+    if not baselining:
+        m_data = grab_data_good(ws, pow_indices, all_pow_bands)
+        for key, value in m_data.items():
+            if key not in all_data:
+                all_data[key] = []
+
+            all_data[key].append(value)
+            if len(all_data[key]) > HISTORY_SIZE:
+                all_data[key].pop(0)
+
+        process_data(all_data, baseline_means)
+
+    elif baselining and diff < baseline_dur:
+        new_data = grab_data_good(ws,pow_indices,all_pow_bands)
+        baseline_data.append(new_data)
+        print('BASELINE: {}'.format(new_data))
+
+    if baselining and diff > baseline_dur:
+        print('OK got baseline... now recording for real')
+        time.sleep(0)
+        baselining = False
+        recording_start_time = time.time()
+        # TODO create baseline means
+        baseline_values = {}
+        for frame in baseline_data:
+            for key, value in frame.items():
+                if key not in baseline_values:
+                    baseline_values[key] = []
+
+                baseline_values[key].append(value)
+
+        for key, values in baseline_values.items():
+            channel_sum = sum(values)
+            mean = channel_sum / len(values)
+            baseline_means[key] = mean
+            print("baseline means:")
+            print("{} - {}".format(key, mean))
+
+
+ws.close()
