@@ -1,5 +1,11 @@
 # beautiful-data-
-Find here the analysis of the data for the experiment when an unconscious preference is happening in real time
+Find here the analysis of the data for the experiment when an unconscious preference is happening in real time and a code to find biases in real time with the Epoc headset from EMOTIV.
+
+I used the 14-channel Epoc but I guess you can use it with the Insight 5-channel too.   
+For this experiment, I bought the software and rights to use.
+
+The file bias-teller is the code to use to detect when a bias is happening in real time.
+The rest of the files are the data is used and analyse.   
 
 # Real time EEG with BCI Emotiv
 
@@ -15,19 +21,22 @@ https://www.emotiv.com/developer/
 
 ### Prerequisites
 
-Import websocket
-import ssl
-import json
+%n: Import websocket
+%n: Import ssl
+%n: Import json
 
+Subscribe to EMOTIVPRO software
+Have the EMOTIV EPOC or Insight
+I connected through bluetooth (you can connect to the BCI in other ways)
 
 ## Supported platforms
 
 Insight with Emotiv Universal USB Receiver currently works with the SDK under:
-	•	Windows 7 or above
-	•	Mac OS X 10.8 or above
-	•	Android 4.4.3 or above
-	•	Ubuntu 16.04
-	•	Debian 8.3 Jessie (armhf)
+%n:	•	Windows 7 or above
+%n:	•	Mac OS X 10.8 or above
+%n:	•	Android 4.4.3 or above
+%n:	•	Ubuntu 16.04
+%n:	•	Debian 8.3 Jessie (armhf)
 
 ## MyEmotiv App for iOS
 
