@@ -21,9 +21,9 @@ https://www.emotiv.com/developer/
 
 ### Prerequisites
 
-%n: Import websocket
-%n: Import ssl
-%n: Import json
+Import websocket
+Import ssl
+Import json
 
 Subscribe to EMOTIVPRO software
 Have the EMOTIV EPOC or Insight
@@ -32,11 +32,11 @@ I connected through bluetooth (you can connect to the BCI in other ways)
 ## Supported platforms
 
 Insight with Emotiv Universal USB Receiver currently works with the SDK under:
-%n:	•	Windows 7 or above
-%n:	•	Mac OS X 10.8 or above
-%n:	•	Android 4.4.3 or above
-%n:	•	Ubuntu 16.04
-%n:	•	Debian 8.3 Jessie (armhf)
+•	Windows 7 or above
+•	Mac OS X 10.8 or above
+•	Android 4.4.3 or above
+•	Ubuntu 16.04
+•	Debian 8.3 Jessie (armhf)
 
 ## MyEmotiv App for iOS
 
